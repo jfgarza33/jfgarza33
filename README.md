@@ -8,5 +8,3 @@ I'm a passionate learner and creative that works in Higher Education in Project 
 - 📫 I'm looking for collobrators, mentors, and those interested in creative processess.
 - 📫 How to reach me
 
-![Snake animation](https://github.com/thepiyushmalhotra/thepiyushmalhotra/blob/output/github-contribution-grid-snake.svg)
-
