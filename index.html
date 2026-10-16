@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paddle Raise Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E9E9E5; --sheet:#F8F8F5; --toner:#151515; --muted:#57574F; --rule:#C9C9C2;
+  --pink:#D9136F; --on-pink:#FFFFFF; --blue:#0067A6; --hl:rgba(255,72,176,.38);
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+  --display:"Anton",Impact,"Arial Narrow Bold","Helvetica Neue",sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#121212; --sheet:#1D1D1B; --toner:#EEEDE7; --muted:#A8A79E; --rule:#3A3A36;
+    --pink:#FF52B3; --on-pink:#151515; --blue:#4AA8E8; --hl:rgba(255,82,179,.32);
+    --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+    color-scheme:dark;
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{background:var(--paper) var(--grain);color:var(--toner);font:16px/1.5 var(--body);-webkit-text-size-adjust:100%}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+
+/* Header: flyer headline */
+.top{max-width:760px;margin:0 auto;padding:20px 16px 0}
+.top h1{font:400 clamp(2.4rem,9vw,3.6rem)/.92 var(--display);text-transform:uppercase;margin:0 0 14px;letter-spacing:.005em}
+.tabs{display:flex;gap:18px;border-bottom:3px solid var(--toner);overflow-x:auto}
+.tabs button{flex:0 0 auto;border:0;background:none;padding:8px 0 6px;cursor:pointer;color:var(--muted);font-weight:700;border-bottom:5px solid transparent;margin-bottom:-3px}
+.tabs button[aria-current="page"]{color:var(--toner);border-bottom-color:var(--pink)}
+
+main{max-width:760px;margin:0 auto;padding:18px 16px 56px}
+.view[hidden]{display:none}
+.h{font:400 1.45rem/1.1 var(--display);margin:28px 0 12px;letter-spacing:.01em}
+.banner{max-width:728px;margin:12px auto 0;padding:10px 14px;background:var(--sheet);border-left:6px solid var(--pink)}
+
+/* Tally */
+.tally{padding:4px 0 0}
+.tally-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tally-num{font:400 clamp(3rem,13vw,4.4rem)/.95 var(--display);font-variant-numeric:tabular-nums}
+.tally-label{color:var(--muted);font-weight:700}
+.bar{height:18px;border:3px solid var(--toner);background:var(--sheet);margin-top:12px}
+.bar-fill{height:100%;width:0;background:var(--blue);transition:width .5s ease}
+
+/* Giving levels as a taped-down setlist */
+.setlist{position:relative;background:var(--sheet);border:2px solid var(--toner);box-shadow:6px 6px 0 var(--toner);padding:14px 16px 6px;transform:rotate(-.6deg);margin:8px 6px 0 0}
+.setlist::before{content:"";position:absolute;top:-13px;left:50%;width:96px;height:26px;transform:translateX(-50%) rotate(2.5deg);background:rgba(200,200,190,.65);border-left:2px dotted rgba(0,0,0,.12);border-right:2px dotted rgba(0,0,0,.12)}
+.levels{display:block}
+.level{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;border:0;border-bottom:2px dashed var(--rule);background:none;padding:8px 2px;cursor:pointer;text-align:left}
+.level:last-child{border-bottom:0}
+.level-amt{font:400 clamp(1.7rem,7vw,2.2rem)/1.05 var(--display);font-variant-numeric:tabular-nums;padding:0 6px;margin-left:-6px}
+.level-count{font-size:.9rem;color:var(--muted);font-weight:700;white-space:nowrap}
+.level[aria-pressed="true"] .level-amt{background:linear-gradient(176deg,transparent 18%,var(--hl) 18%,var(--hl) 88%,transparent 88%)}
+.level[aria-pressed="true"] .level-count{color:var(--pink)}
+
+/* Add form */
+.add{margin-top:30px}
+.add label{display:block;font-weight:700}
+.add .hint{display:block;color:var(--muted);font-size:.9rem;margin-bottom:8px}
+.add-row{display:flex;gap:8px}
+.add input{flex:1;min-width:0;font:400 2.1rem/1 var(--display);padding:10px 12px;border:3px solid var(--toner);border-radius:0;background:var(--sheet)}
+.add input::placeholder{color:var(--rule)}
+.add input:focus{outline:none;box-shadow:5px 5px 0 var(--pink)}
+.btn{border:3px solid var(--toner);background:var(--sheet);border-radius:0;padding:10px 16px;font-weight:700;cursor:pointer}
+.btn.primary{background:var(--toner);color:var(--paper)}
+.btn.primary:hover{background:var(--pink);border-color:var(--pink);color:var(--on-pink)}
+.btn.ghost{border-color:var(--rule);background:transparent;color:var(--muted)}
+.btn.danger{border-color:var(--pink);color:var(--pink);background:transparent}
+.btn:disabled{opacity:.45;cursor:default}
+.msg{min-height:1.5em;margin:10px 0 0;padding:0}
+.msg.warn{background:var(--sheet);border-left:6px solid var(--pink);padding:8px 12px}
+.msg.ok{background:var(--sheet);border-left:6px solid var(--blue);padding:8px 12px}
+
+/* Paddles as rubber hand stamps: the memorable element */
+.row-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:30px 0 14px}
+.row-head .h{margin:0}
+.paddles{list-style:none;margin:0;padding:4px 0;display:flex;flex-wrap:wrap;gap:12px 14px}
+.stamp{--stamp-bg:var(--paper);display:inline-grid;place-items:center;min-width:70px;height:54px;padding:0 10px;
+  border:3px solid currentColor;border-radius:9px;box-shadow:inset 0 0 0 3px var(--stamp-bg),inset 0 0 0 5px currentColor;
+  background:transparent;color:var(--pink);font:400 1.65rem/1 var(--display);font-variant-numeric:tabular-nums;
+  transform:rotate(var(--r,0deg));filter:url(#ink);cursor:pointer}
+.empty{color:var(--muted);margin:0}
+
+/* Summary table */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:8px 6px;border-bottom:2px dashed var(--rule);text-align:right}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--muted);font-weight:700;font-size:.9rem;border-bottom:3px solid var(--toner)}
+tfoot td{font-weight:700}
+tfoot tr:last-child td{border-top:3px solid var(--toner);border-bottom:0;font:400 1.7rem/1.1 var(--display)}
+
+/* Setup + export */
+.field{margin-bottom:18px}
+.field label{display:block;font-weight:700;margin-bottom:2px}
+.field .hint{display:block;color:var(--muted);font-size:.9rem;margin-bottom:6px}
+.field input,.field textarea{width:100%;padding:10px 12px;border:3px solid var(--toner);border-radius:0;background:var(--sheet)}
+.field input:focus,.field textarea:focus{outline:none;box-shadow:5px 5px 0 var(--pink)}
+.field textarea{min-height:140px;font-variant-numeric:tabular-nums}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 16px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.note{color:var(--muted);font-size:.95rem;max-width:62ch}
+pre.summary{background:var(--sheet);border:2px solid var(--toner);box-shadow:6px 6px 0 var(--toner);padding:16px;white-space:pre-wrap;font:15px/1.6 var(--body)}
+
+/* Big screen: arthouse title card */
+body.is-screen{--paper:#070707;background:#070707 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .07 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");color:#F2EFE8}
+body.is-screen .top{display:none}
+body.is-screen main{max-width:none;padding:0}
+.screen{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px 14px}
+.screen-inner{width:min(1100px,100%)}
+.screen-event{font:700 clamp(.95rem,1.8vw,1.25rem)/1.3 var(--body);letter-spacing:.32em;margin:0 0 6px;color:#9C998F}
+.screen-total{font:400 clamp(4.5rem,19vw,13rem)/.9 var(--display);margin:6px 0 22px;font-variant-numeric:tabular-nums;color:#F2EFE8}
+.strip{position:relative;height:clamp(30px,4.2vw,46px);max-width:900px;margin:0 auto;background:#1B1B1B;border:0}
+.strip::before,.strip::after{content:"";position:absolute;left:0;right:0;height:22%;z-index:1;
+  background:repeating-linear-gradient(90deg,transparent 0 9px,#070707 9px 21px,transparent 21px 30px)}
+.strip::before{top:8%}.strip::after{bottom:8%}
+.strip .bar-fill{background:#FF52B3}
+.screen-meta{font-size:clamp(1.05rem,2.4vw,1.7rem);margin:16px 0 0;color:#CFCBC1}
+.screen-level{font:400 clamp(1.8rem,4.6vw,3.4rem)/1.05 var(--display);margin:38px 0 22px;color:#F2EFE8}
+.screen .paddles{justify-content:center;gap:20px 24px;min-height:120px}
+.screen .stamp{--stamp-bg:#070707;color:#FF52B3;min-width:clamp(84px,11vw,140px);height:clamp(64px,8.4vw,100px);
+  font-size:clamp(1.8rem,4vw,3.1rem);border-width:4px;cursor:default}
+.screen-tools{margin-top:44px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.screen-tools .btn{background:transparent;color:#9C998F;border-color:#34332F;text-decoration:none;font-size:.95rem}
+:fullscreen .screen-tools{opacity:0;transition:opacity .3s}
+:fullscreen .screen-tools:hover,:fullscreen .screen-tools:focus-within{opacity:1}
+
+@keyframes thunk{0%{transform:rotate(var(--r,0deg)) scale(1.7);opacity:0}60%{transform:rotate(var(--r,0deg)) scale(.94);opacity:1}100%{transform:rotate(var(--r,0deg)) scale(1)}}
+.stamp.new{animation:thunk .38s cubic-bezier(.3,.7,.4,1) both}
+@media (prefers-reduced-motion: reduce){.stamp.new{animation:none}.bar-fill{transition:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="ink"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4"/></filter></svg>
+<header class="top">
+  <h1 id="eventTitle">Paddle Raise</h1>
+  <nav class="tabs" aria-label="Sections">
+    <button type="button" data-view="record">Record</button>
+    <button type="button" data-view="screen">Big screen</button>
+    <button type="button" data-view="setup">Setup</button>
+    <button type="button" data-view="export">Export</button>
+  </nav>
+</header>
+<div id="storageWarn" class="banner" role="alert" hidden>This browser isn't saving gifts. Keep this tab open and export before you close it.</div>
+
+<main>
+  <!-- RECORD -->
+  <section id="view-record" class="view" aria-labelledby="eventTitle">
+    <div class="tally">
+      <div class="tally-row">
+        <span class="tally-num" id="recTotal">$0</span>
+        <span class="tally-label" id="recGoal"></span>
+      </div>
+      <div class="bar" role="progressbar" aria-label="Progress to goal" aria-valuemin="0" aria-valuemax="100" id="recBarWrap"><div class="bar-fill" id="recBar"></div></div>
+    </div>
+
+    <h2 class="h">Giving levels</h2>
+    <div class="setlist"><div class="levels" id="levels"></div></div>
+
+    <form id="addForm" class="add" autocomplete="off" novalidate>
+      <label for="paddleInput">Paddle numbers at <span id="levelLabel"></span></label>
+      <span class="hint" id="addHint">Enter one, or several separated by spaces, commas, or periods.</span>
+      <div class="add-row">
+        <input id="paddleInput" inputmode="decimal" enterkeyhint="done" placeholder="214 215 216" aria-describedby="addHint msg">
+        <button type="submit" class="btn primary">Add paddle</button>
+      </div>
+      <p id="msg" class="msg" role="status" aria-live="polite"></p>
+    </form>
+
+    <div class="row-head">
+      <h2 class="h" id="atLevelHead">Paddles at this level</h2>
+      <button type="button" id="undoBtn" class="btn ghost">Undo last</button>
+    </div>
+    <ul class="paddles" id="paddleList"></ul>
+
+    <h2 class="h">By level</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Level</th><th scope="col">Gifts</th><th scope="col">Subtotal</th></tr></thead>
+        <tbody id="sumBody"></tbody>
+        <tfoot id="sumFoot"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <!-- BIG SCREEN -->
+  <section id="view-screen" class="view screen" hidden>
+    <div class="screen-inner">
+      <p class="screen-event" id="scrEvent"></p>
+      <p class="screen-total" id="scrTotal" aria-live="polite">$0</p>
+      <div class="bar strip"><div class="bar-fill" id="scrBar"></div></div>
+      <p class="screen-meta" id="scrMeta"></p>
+      <p class="screen-level" id="scrLevel"></p>
+      <ul class="paddles" id="scrPaddles" aria-label="Recent paddles"></ul>
+      <div class="screen-tools">
+        <button type="button" class="btn" id="fsBtn">Full screen</button>
+        <a class="btn" href="#screen" target="_blank" rel="noopener">Open in new window</a>
+        <button type="button" class="btn" data-view="record">Back to recording</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETUP -->
+  <section id="view-setup" class="view" hidden>
+    <form id="setupForm" novalidate>
+      <div class="field">
+        <label for="fEvent">Event name</label>
+        <input id="fEvent" maxlength="80">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="fGoal">Goal</label>
+          <span class="hint">Whole dollars</span>
+          <input id="fGoal" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="fPre">Already pledged</label>
+          <span class="hint">Lead gifts committed before the raise</span>
+          <input id="fPre" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="fMatch">Match cap</label>
+          <span class="hint">Matches paddle gifts dollar for dollar up to this amount. Use 0 for no match.</span>
+          <input id="fMatch" inputmode="numeric">
+        </div>
+      </div>
+      <div class="field">
+        <label for="fLevels">Giving levels</label>
+        <span class="hint">One amount per line, in the order the auctioneer will call them</span>
+        <textarea id="fLevels" rows="7"></textarea>
+      </div>
+      <div class="field">
+        <label for="fRoster">Paddle roster (optional)</label>
+        <span class="hint">One per line: paddle number, comma, name. Paste from a spreadsheet. It stays on this device.</span>
+        <textarea id="fRoster" rows="6" placeholder="214, Maria Lopez&#10;215, The Ramirez Family"></textarea>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn primary">Save setup</button>
+      </div>
+      <p id="setupMsg" class="msg" role="status" aria-live="polite"></p>
+    </form>
+
+    <h2 class="h">Start over</h2>
+    <p class="note">Clears every recorded paddle on this device. Setup and roster stay. Export first if you need a record.</p>
+    <button type="button" class="btn danger" id="clearBtn">Clear all gifts</button>
+  </section>
+
+  <!-- EXPORT -->
+  <section id="view-export" class="view" hidden>
+    <p class="note">The CSV lists every gift with time, paddle, donor name (from the roster), level, and amount. Map these columns to your donor database's import template and spot-check totals before importing.</p>
+    <div class="actions">
+      <button type="button" class="btn primary" id="csvBtn">Download gifts CSV</button>
+      <button type="button" class="btn" id="copyBtn">Copy summary</button>
+    </div>
+    <p id="exportMsg" class="msg" role="status" aria-live="polite"></p>
+    <h2 class="h">Summary</h2>
+    <pre class="summary" id="summaryText"></pre>
+  </section>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var KEY = "paddle-raise-tracker:v1";
+  var DEFAULTS = {
+    eventName: "Paddle Raise", goal: 50000, prepledged: 0, matchCap: 0,
+    levels: [10000, 5000, 2500, 1000, 500, 250, 100], currentLevel: 1000,
+    entries: [], roster: {}
+  };
+  var VIEWS = ["record", "screen", "setup", "export"];
+  var fmtNum = new Intl.NumberFormat("en-US", {style: "currency", currency: "USD", maximumFractionDigits: 0});
+  function fmt(n){ return fmtNum.format(n || 0); }
+  function $(id){ return document.getElementById(id); }
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function toInt(v){ var n = parseInt(String(v).replace(/[^0-9]/g, ""), 10); return isNaN(n) ? 0 : n; }
+
+  function load(){
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) { return Object.assign(clone(DEFAULTS), JSON.parse(raw)); }
+    } catch (e) {}
+    return clone(DEFAULTS);
+  }
+  function save(){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); $("storageWarn").hidden = true; }
+    catch (e) { $("storageWarn").hidden = false; }
+  }
+
+  var state = load();
+  var view = "record";
+  var pendingDup = null;
+  var lastAnimatedBatch = null;
+
+  function totals(){
+    var paddle = state.entries.reduce(function(s, e){ return s + e.amount; }, 0);
+    var match = Math.min(paddle, state.matchCap || 0);
+    var grand = (state.prepledged || 0) + paddle + match;
+    var pct = state.goal > 0 ? (grand / state.goal) * 100 : 0;
+    return {paddle: paddle, match: match, grand: grand, pct: pct, gifts: state.entries.length};
+  }
+  function entriesAt(amount){ return state.entries.filter(function(e){ return e.amount === amount; }); }
+  function allLevels(){
+    var set = {};
+    state.levels.forEach(function(a){ set[a] = true; });
+    state.entries.forEach(function(e){ set[e.amount] = true; });
+    return Object.keys(set).map(Number).sort(function(a, b){ return b - a; });
+  }
+  function nameFor(p){ return state.roster[String(p).toLowerCase()] || ""; }
+  function tilt(s){ var h = 0; s = String(s); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (Math.abs(h) % 13) - 6; }
+  function plural(n, word){ return n + " " + word + (n === 1 ? "" : "s"); }
+
+  function setMsg(el, text, kind){
+    el.textContent = text || "";
+    el.className = "msg" + (kind ? " " + kind : "");
+  }
+
+  /* ---------- Rendering ---------- */
+  function renderRecord(){
+    var t = totals();
+    $("recTotal").textContent = fmt(t.grand);
+    $("recGoal").textContent = state.goal > 0 ? Math.round(t.pct) + "% of " + fmt(state.goal) + " goal" : "No goal set";
+    $("recBar").style.width = Math.min(t.pct, 100) + "%";
+    $("recBarWrap").setAttribute("aria-valuenow", String(Math.round(Math.min(t.pct, 100))));
+
+    $("levels").innerHTML = state.levels.map(function(a){
+      var n = entriesAt(a).length;
+      return '<button type="button" class="level" data-level="' + a + '" aria-pressed="' + (a === state.currentLevel) + '">' +
+        '<span class="level-amt">' + fmt(a) + '</span><span class="level-count">' + plural(n, "gift") + '</span></button>';
+    }).join("");
+
+    $("levelLabel").textContent = fmt(state.currentLevel);
+    $("atLevelHead").textContent = "Paddles at " + fmt(state.currentLevel);
+    var here = entriesAt(state.currentLevel).slice().reverse();
+    $("paddleList").innerHTML = here.length ? here.map(function(e){
+      var nm = nameFor(e.paddle);
+      return '<li><button type="button" class="stamp" style="--r:' + tilt(e.id) + 'deg" data-remove="' + e.id + '" title="' + esc(nm || "Paddle " + e.paddle) + '" aria-label="Paddle ' + esc(e.paddle) + (nm ? ", " + esc(nm) : "") + '. Tap to remove.">' + esc(e.paddle) + '</button></li>';
+    }).join("") : '<li class="empty">No paddles yet at this level.</li>';
+    $("undoBtn").disabled = state.entries.length === 0;
+
+    $("sumBody").innerHTML = allLevels().map(function(a){
+      var es = entriesAt(a);
+      return "<tr><td>" + fmt(a) + "</td><td>" + es.length + "</td><td>" + fmt(es.length * a) + "</td></tr>";
+    }).join("");
+    var foot = "";
+    if (state.prepledged) foot += "<tr><td>Already pledged</td><td></td><td>" + fmt(state.prepledged) + "</td></tr>";
+    if (state.matchCap) foot += "<tr><td>Match (up to " + fmt(state.matchCap) + ")</td><td></td><td>" + fmt(t.match) + "</td></tr>";
+    foot += "<tr><td>Total</td><td>" + t.gifts + "</td><td>" + fmt(t.grand) + "</td></tr>";
+    $("sumFoot").innerHTML = foot;
+  }
+
+  function renderScreen(){
+    var t = totals();
+    $("scrEvent").textContent = state.eventName;
+    $("scrTotal").textContent = fmt(t.grand);
+    $("scrBar").style.width = Math.min(t.pct, 100) + "%";
+    var meta = plural(t.gifts, "gift");
+    if (state.goal > 0) meta = Math.round(t.pct) + "% of our " + fmt(state.goal) + " goal, " + meta;
+    if (state.matchCap) meta += ", matched up to " + fmt(state.matchCap);
+    $("scrMeta").textContent = meta;
+    $("scrLevel").textContent = "Raise your paddle at " + fmt(state.currentLevel);
+    var recent = entriesAt(state.currentLevel).slice(-14).reverse();
+    var lastE = state.entries[state.entries.length - 1];
+    var newest = lastE ? (lastE.batch || lastE.id) : null;
+    $("scrPaddles").innerHTML = recent.map(function(e){
+      var cls = ((e.batch || e.id) === newest && newest !== lastAnimatedBatch) ? "stamp new" : "stamp";
+      return '<li><span class="' + cls + '" style="--r:' + tilt(e.id) + 'deg">' + esc(e.paddle) + "</span></li>";
+    }).join("");
+    lastAnimatedBatch = newest;
+  }
+
+  function summaryText(){
+    var t = totals();
+    var lines = [state.eventName, new Date().toLocaleString(), ""];
+    allLevels().forEach(function(a){
+      var n = entriesAt(a).length;
+      if (n) lines.push(fmt(a) + " x " + n + " = " + fmt(n * a));
+    });
+    lines.push("");
+    lines.push("Paddle gifts: " + fmt(t.paddle) + " (" + plural(t.gifts, "gift") + ")");
+    if (state.prepledged) lines.push("Already pledged: " + fmt(state.prepledged));
+    if (state.matchCap) lines.push("Match: " + fmt(t.match) + " of " + fmt(state.matchCap) + " cap");
+    lines.push("Total raised: " + fmt(t.grand));
+    if (state.goal > 0) lines.push("Goal: " + fmt(state.goal) + " (" + Math.round(t.pct) + "%)");
+    return lines.join("\n");
+  }
+
+  function fillSetup(){
+    $("fEvent").value = state.eventName;
+    $("fGoal").value = state.goal || "";
+    $("fPre").value = state.prepledged || "";
+    $("fMatch").value = state.matchCap || "";
+    $("fLevels").value = state.levels.join("\n");
+    $("fRoster").value = Object.keys(state.roster).map(function(k){ return k + ", " + state.roster[k]; }).join("\n");
+    setMsg($("setupMsg"), "");
+  }
+
+  function renderAll(){
+    $("eventTitle").textContent = state.eventName;
+    document.title = state.eventName + " | Paddle Raise Tracker";
+    renderRecord();
+    renderScreen();
+    if (view === "export") $("summaryText").textContent = summaryText();
+  }
+
+  function show(v){
+    if (VIEWS.indexOf(v) < 0) v = "record";
+    view = v;
+    VIEWS.forEach(function(name){ $("view-" + name).hidden = name !== v; });
+    document.querySelectorAll(".tabs [data-view]").forEach(function(b){
+      if (b.getAttribute("data-view") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+    });
+    document.body.classList.toggle("is-screen", v === "screen");
+    if (v === "setup") fillSetup();
+    if (v === "export") { $("summaryText").textContent = summaryText(); setMsg($("exportMsg"), ""); }
+    if (location.hash !== "#" + v) history.replaceState(null, "", "#" + v);
+    renderAll();
+  }
+
+  /* ---------- Actions ---------- */
+  function addPaddles(raw){
+    var msg = $("msg");
+    var lvl = state.currentLevel;
+    var tokens = String(raw).split(/[\s,.;]+/).map(function(t){ return t.replace(/^#/, ""); }).filter(Boolean);
+    if (!tokens.length) { setMsg(msg, "Enter a paddle number, like 214.", "warn"); return raw; }
+
+    var invalid = [], fresh = [], dupes = [];
+    var existing = {};
+    entriesAt(lvl).forEach(function(e){ existing[e.paddle.toLowerCase()] = true; });
+    var inBatch = {};
+    tokens.forEach(function(t){
+      if (!/^[A-Za-z0-9-]{1,8}$/.test(t)) { invalid.push(t); return; }
+      var k = t.toLowerCase();
+      if (existing[k] || inBatch[k]) dupes.push(t); else { fresh.push(t); inBatch[k] = true; }
+    });
+
+    // Repeat paddles need a second tap on Add to confirm
+    var dupKey = dupes.length ? lvl + ":" + dupes.map(function(d){ return d.toLowerCase(); }).sort().join(",") : null;
+    var confirmDupes = dupes.length && pendingDup === dupKey;
+    var toAdd = confirmDupes ? fresh.concat(dupes) : fresh;
+    pendingDup = (dupes.length && !confirmDupes) ? dupKey : null;
+
+    if (toAdd.length) {
+      var batch = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      var now = Date.now();
+      toAdd.forEach(function(p, i){
+        state.entries.push({id: batch + "-" + i, batch: batch, paddle: p, amount: lvl, ts: now});
+      });
+      save(); renderAll();
+    }
+
+    var parts = [];
+    if (toAdd.length === 1) {
+      var nm = nameFor(toAdd[0]);
+      parts.push("Added paddle " + toAdd[0] + (nm ? " (" + nm + ")" : "") + " at " + fmt(lvl) + ".");
+    } else if (toAdd.length > 1) {
+      parts.push("Added " + toAdd.length + " paddles at " + fmt(lvl) + ": " + toAdd.join(", ") + ".");
+    }
+    if (pendingDup) parts.push("Already in at " + fmt(lvl) + ": " + dupes.join(", ") + ". Tap Add paddle again to record " + (dupes.length === 1 ? "a second gift" : "second gifts") + ", or clear the box.");
+    if (invalid.length) parts.push("Couldn't read: " + invalid.join(", ") + ".");
+    setMsg(msg, parts.join(" "), (pendingDup || invalid.length) ? "warn" : "ok");
+
+    // Leave anything not recorded in the box so it can be fixed or confirmed
+    return (pendingDup ? dupes : []).concat(invalid).join(" ");
+  }
+
+  function download(filename, text){
+    var blob = new Blob([text], {type: "text/csv;charset=utf-8"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+  function csvCell(v){ v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function buildCsv(){
+    var rows = [["Time", "Paddle", "Donor name", "Level", "Amount"]];
+    state.entries.forEach(function(e){
+      rows.push([new Date(e.ts).toLocaleString(), e.paddle, nameFor(e.paddle), e.amount, e.amount]);
+    });
+    return "\ufeff" + rows.map(function(r){ return r.map(csvCell).join(","); }).join("\r\n");
+  }
+
+  /* ---------- Events ---------- */
+  document.addEventListener("click", function(ev){
+    var t = ev.target;
+    var nav = t.closest("[data-view]");
+    if (nav) { show(nav.getAttribute("data-view")); return; }
+
+    var lv = t.closest("[data-level]");
+    if (lv) {
+      state.currentLevel = Number(lv.getAttribute("data-level"));
+      pendingDup = null; save(); renderAll();
+      setMsg($("msg"), "");
+      $("paddleInput").focus();
+      return;
+    }
+
+    var rm = t.closest("[data-remove]");
+    if (rm) {
+      var id = rm.getAttribute("data-remove");
+      var e = state.entries.find(function(x){ return x.id === id; });
+      if (e && confirm("Remove paddle " + e.paddle + " at " + fmt(e.amount) + "?")) {
+        state.entries = state.entries.filter(function(x){ return x.id !== id; });
+        save(); renderAll();
+        setMsg($("msg"), "Removed paddle " + e.paddle + ".", "ok");
+      }
+    }
+  });
+
+  $("addForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var input = $("paddleInput");
+    input.value = addPaddles(input.value);
+    input.focus();
+  });
+  $("paddleInput").addEventListener("input", function(){ pendingDup = null; });
+
+  $("undoBtn").addEventListener("click", function(){
+    var last = state.entries[state.entries.length - 1];
+    if (!last) return;
+    var b = last.batch || last.id;
+    var removed = state.entries.filter(function(e){ return (e.batch || e.id) === b; });
+    state.entries = state.entries.filter(function(e){ return (e.batch || e.id) !== b; });
+    pendingDup = null; save(); renderAll();
+    setMsg($("msg"), removed.length === 1
+      ? "Undid paddle " + last.paddle + " at " + fmt(last.amount) + "."
+      : "Undid " + removed.length + " paddles at " + fmt(last.amount) + ": " + removed.map(function(e){ return e.paddle; }).join(", ") + ".", "ok");
+  });
+
+  $("setupForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var levels = $("fLevels").value.split(/\n+/).map(toInt).filter(function(n){ return n > 0; });
+    var seen = {};
+    levels = levels.filter(function(n){ if (seen[n]) return false; seen[n] = true; return true; });
+    if (!levels.length) { setMsg($("setupMsg"), "Add at least one giving level, like 1000.", "warn"); return; }
+    var roster = {};
+    $("fRoster").value.split(/\n+/).forEach(function(line){
+      var m = line.match(/^\s*#?([A-Za-z0-9-]{1,8})\s*[,\t]\s*(.+?)\s*$/);
+      if (m) roster[m[1].toLowerCase()] = m[2];
+    });
+    state.eventName = $("fEvent").value.trim() || "Paddle Raise";
+    state.goal = toInt($("fGoal").value);
+    state.prepledged = toInt($("fPre").value);
+    state.matchCap = toInt($("fMatch").value);
+    state.levels = levels;
+    if (levels.indexOf(state.currentLevel) < 0) state.currentLevel = levels[0];
+    state.roster = roster;
+    save(); renderAll();
+    setMsg($("setupMsg"), "Saved. " + plural(levels.length, "level") + ", " + plural(Object.keys(roster).length, "roster name") + ".", "ok");
+  });
+
+  $("clearBtn").addEventListener("click", function(){
+    if (!state.entries.length) { alert("There are no gifts to clear."); return; }
+    if (confirm("Clear all " + plural(state.entries.length, "gift") + " on this device? This can't be undone.")) {
+      state.entries = []; save(); renderAll();
+      setMsg($("setupMsg"), "All gifts cleared.", "ok");
+    }
+  });
+
+  $("csvBtn").addEventListener("click", function(){
+    if (!state.entries.length) { setMsg($("exportMsg"), "No gifts recorded yet.", "warn"); return; }
+    var slug = state.eventName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "paddle-raise";
+    var d = new Date();
+    var stamp = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    download(slug + "-gifts-" + stamp + ".csv", buildCsv());
+    setMsg($("exportMsg"), "Downloaded " + plural(state.entries.length, "gift") + ".", "ok");
+  });
+
+  $("copyBtn").addEventListener("click", function(){
+    var text = summaryText();
+    function done(){ setMsg($("exportMsg"), "Summary copied.", "ok"); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function(){ setMsg($("exportMsg"), "Copy failed. Select the summary below and copy it by hand.", "warn"); });
+    } else {
+      setMsg($("exportMsg"), "Select the summary below and copy it by hand.", "warn");
+    }
+  });
+
+  $("fsBtn").addEventListener("click", function(){
+    var el = document.documentElement;
+    if (document.fullscreenElement) { document.exitFullscreen(); }
+    else if (el.requestFullscreen) { el.requestFullscreen().catch(function(){}); }
+  });
+
+  // Keep a big-screen tab in sync with the recording tab on the same browser
+  window.addEventListener("storage", function(ev){
+    if (ev.key === KEY) { state = load(); renderAll(); }
+  });
+  window.addEventListener("hashchange", function(){ show(location.hash.slice(1)); });
+
+  show(location.hash.slice(1) || "record");
+})();
+</script>
+</body>
+</html>
